@@ -150,6 +150,9 @@ import static android.media.AudioManager.STREAM_VOICE_CALL;
  */
 public class LinphoneManager implements LinphoneCoreListener, LinphoneChatMessage.LinphoneChatMessageListener, SensorEventListener, LinphoneAccountCreator.LinphoneAccountCreatorListener {
 
+    public static final String ACTION_CALL = "org.linphone.action.CALL";
+    public static final String ACTION_ENDCALL = "org.linphone.action.ENDCALL";
+    public static final String STATE_SIPSTATE = "org.linphone.state.SIPSTATE";
 	private static LinphoneManager instance;
 	private Context mServiceContext;
 	private AudioManager mAudioManager;
@@ -173,11 +176,15 @@ public class LinphoneManager implements LinphoneCoreListener, LinphoneChatMessag
 	private BroadcastReceiver mHookReceiver;
 	private BroadcastReceiver mCallReceiver;
 	private BroadcastReceiver mNetworkReceiver;
+    private BroadcastReceiver mHangupReceiver;
+    private BroadcastReceiver mDirectCallReceiver;
 	private IntentFilter mKeepAliveIntentFilter;
 	private IntentFilter mDozeIntentFilter;
 	private IntentFilter mHookIntentFilter;
 	private IntentFilter mCallIntentFilter;
 	private IntentFilter mNetworkIntentFilter;
+    private IntentFilter mHangupIntentFilter;
+    private IntentFilter mDirectCallIntentFilter;
 	private Handler mHandler = new Handler();
 	private WakeLock mProximityWakelock;
 	private LinphoneAccountCreator accountCreator;
@@ -737,6 +744,16 @@ public class LinphoneManager implements LinphoneCoreListener, LinphoneChatMessag
 			} catch (Exception e) {
 				Log.e(e);
 			}
+            try {
+                mServiceContext.unregisterReceiver(mHangupReceiver);
+            } catch (Exception e) {
+                Log.e(e);
+            }
+            try {
+                mServiceContext.unregisterReceiver(mDirectCallReceiver);
+            } catch (Exception e) {
+                Log.e(e);
+            }
 			try {
 				dozeManager(false);
 			} catch (IllegalArgumentException iae) {
@@ -872,7 +889,19 @@ public class LinphoneManager implements LinphoneCoreListener, LinphoneChatMessag
 		}catch(IllegalArgumentException e){e.printStackTrace();}
 		mProximityWakelock = mPowerManager.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "manager_proximity_sensor");
 
+        mHangupIntentFilter = new IntentFilter(ACTION_ENDCALL);
+        mHangupIntentFilter.setPriority(99999999);
+        mHangupReceiver = new HangupReceiver();
+        try {
+            mServiceContext.registerReceiver(mHangupReceiver, mHangupIntentFilter);
+        }catch(IllegalArgumentException e){e.printStackTrace();}
 
+        mDirectCallIntentFilter = new IntentFilter(ACTION_CALL);
+        mDirectCallIntentFilter.setPriority(99999999);
+        mDirectCallReceiver = new DirectCallReceiver();
+        try {
+            mServiceContext.registerReceiver(mDirectCallReceiver, mDirectCallIntentFilter);
+        }catch(IllegalArgumentException e){e.printStackTrace();}
 
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 			mDozeIntentFilter = new IntentFilter();
@@ -1073,6 +1102,16 @@ public class LinphoneManager implements LinphoneCoreListener, LinphoneChatMessag
 			} catch (Exception e) {
 				Log.e(e);
 			}
+            try {
+                mServiceContext.unregisterReceiver(mHangupReceiver);
+            } catch (Exception e) {
+                Log.e(e);
+            }
+            try {
+                mServiceContext.unregisterReceiver(mDirectCallReceiver);
+            } catch (Exception e) {
+                Log.e(e);
+            }
 			try {
 				dozeManager(false);
 			} catch (IllegalArgumentException iae) {
@@ -1378,17 +1417,20 @@ public class LinphoneManager implements LinphoneCoreListener, LinphoneChatMessag
 		Log.d("[AudioManager] Mode: MODE_IN_COMMUNICATION");
 
 		mAudioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+
 	}
 
 	@SuppressLint("Wakelock")
 	public void callState(final LinphoneCore lc,final LinphoneCall call, final State state, final String message) {
 		Log.i("New call state [",state,"]");
+		String newCallState = null;
 		if (state == State.IncomingReceived && !call.equals(lc.getCurrentCall())) {
 			if (call.getReplacedCall()!=null){
 				// attended transfer
 				// it will be accepted automatically.
 				return;
 			}
+			newCallState = "ringing";
 		}
 
 		if (state == State.IncomingReceived && getCallGsmON()) {
@@ -1417,6 +1459,7 @@ public class LinphoneManager implements LinphoneCoreListener, LinphoneChatMessag
 			};
 			mTimer = new Timer("Auto answer");
 			mTimer.schedule(lTask, mPrefs.getAutoAnswerTime());
+            newCallState = "ringing";
 		} else if (state == State.IncomingReceived || (state == State.CallIncomingEarlyMedia && mR.getBoolean(R.bool.allow_ringing_while_early_media))) {
 			// Brighten screen for at least 10 seconds
 			if (mLc.getCallsNb() == 1) {
@@ -1425,6 +1468,7 @@ public class LinphoneManager implements LinphoneCoreListener, LinphoneChatMessag
 				ringingCall = call;
 				startRinging();
 				// otherwise there is the beep
+                newCallState = "ringing";
 			}
 		} else if (call == ringingCall && isRinging) {
 			//previous state was ringing, so stop ringing
@@ -1467,6 +1511,7 @@ public class LinphoneManager implements LinphoneCoreListener, LinphoneChatMessag
 						routeAudioToReceiver();
 					}
 				}
+                newCallState = "idle";
 			}
 		}
 		if (state == State.CallUpdatedByRemote) {
@@ -1488,12 +1533,20 @@ public class LinphoneManager implements LinphoneCoreListener, LinphoneChatMessag
 			setAudioManagerInCallMode();
 			requestAudioFocus(STREAM_VOICE_CALL);
 			startBluetooth();
+            newCallState = "ringing";
 		}
 
 		if (state == State.StreamsRunning) {
 			startBluetooth();
 			setAudioManagerInCallMode();
+            newCallState = "connected";
 		}
+
+        if(newCallState != null) {
+            Intent intentMessage = new Intent(STATE_SIPSTATE);
+            intentMessage.putExtra("state", newCallState);
+            mServiceContext.sendBroadcast(intentMessage);
+        }
 	}
 
 	public void startBluetooth() {
