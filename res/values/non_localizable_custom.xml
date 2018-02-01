@@ -90,9 +90,9 @@
 	<bool name="display_contact_organization">true</bool>
 
 	<!-- Others Parameters-->
-	<string name="about_bugreport_email">linphone-android@belledonne-communications.com</string>
+	<string name="about_bugreport_email">mvdhorst@clb.nl</string>
 	<bool name="enable_call_notification">true</bool>
-	<bool name="kill_service_with_task_manager">true</bool>
+	<bool name="kill_service_with_task_manager">false</bool>
 	<string name="notification_service_channel_id">linphone_notification_service_id</string>
 	<string name="notification_channel_id">linphone_notification_id</string>
 	<integer name="notification_ms_on">1000</integer>
