@@ -289,6 +289,9 @@ public class LinphoneActivity extends LinphoneGenericActivity implements OnClick
 			LinphoneManager.getLc().setDeviceRotation(rotation);
 		}
 		mAlwaysChangingPhoneAngle = rotation;
+
+		//CLB
+		LinphoneManager.getLc().setMaxCalls(1);
 	}
 
 	private void initButtons() {

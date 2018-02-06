@@ -54,6 +54,8 @@ public class CallOutgoingActivity extends LinphoneGenericActivity implements OnC
 	private LinphoneCall mCall;
 	private LinphoneCoreListenerBase mListener;
 	private boolean isMicMuted, isSpeakerEnabled;
+	private Boolean isHangUp = false; // CLB Quick Fix for calling phone clients with setMaxCalls = 1
+
 
 	public static CallOutgoingActivity instance() {
 		return instance;
@@ -92,6 +94,7 @@ public class CallOutgoingActivity extends LinphoneGenericActivity implements OnC
 
 		hangUp = (ImageView) findViewById(R.id.outgoing_hang_up);
 		hangUp.setOnClickListener(this);
+		isHangUp = false;
 
 		mListener = new LinphoneCoreListenerBase(){
 			@Override
@@ -104,7 +107,7 @@ public class CallOutgoingActivity extends LinphoneGenericActivity implements OnC
 					finish();
 					return;
 				} else if (state == State.Error) {
-					// Convert LinphoneCore message for internalization
+					// Error State : Display Message (TODO Convert LinphoneCore message for internalization)
 					if (call.getErrorInfo().getReason() == Reason.Declined) {
 						displayCustomToast(getString(R.string.error_call_declined), Toast.LENGTH_SHORT);
 						decline();
@@ -122,11 +125,18 @@ public class CallOutgoingActivity extends LinphoneGenericActivity implements OnC
 						decline();
 					}
 				}else if (state == State.CallEnd) {
-					// Convert LinphoneCore message for internalization
+					// CallEnd State, eventually show message (Busy / Declined)
+					int duration= call.getDuration();
 					if (call.getErrorInfo().getReason() == Reason.Declined) {
 						displayCustomToast(getString(R.string.error_call_declined), Toast.LENGTH_SHORT);
 						decline();
 					}
+					else if  (!isHangUp  && duration < 2 ) {
+						// CLB: Busy, when maxCall is one, no error is send, just callend with duration = 0/1
+						displayCustomToast(getString(R.string.error_user_busy), Toast.LENGTH_SHORT);
+						decline();
+					}
+					isHangUp = false;
 				}
 
 				if (LinphoneManager.getLc().getCallsNb() == 0) {
@@ -230,6 +240,7 @@ public class CallOutgoingActivity extends LinphoneGenericActivity implements OnC
 			LinphoneManager.getLc().enableSpeaker(isSpeakerEnabled);
 		}
 		if (id == R.id.outgoing_hang_up) {
+			isHangUp = true;
 			decline();
 		}
 	}

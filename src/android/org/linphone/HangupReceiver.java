@@ -22,38 +22,25 @@ public class HangupReceiver extends BroadcastReceiver {
         if(isOrderedBroadcast())
             abortBroadcast();
 
-        LinphoneCore lc = LinphoneManager.getLc();
-        LinphoneCall currentCall = lc.getCurrentCall();
 
         // Find Sip Nr to hang up
         String hangUpNr = null;
         if (intent != null) {
             Bundle extras = intent.getExtras();
             if (extras != null && extras.containsKey("uri")) {
-                hangUpNr = extras.getString("uri");
+                hangUpNr = FormatUri(extras.getString("uri"));
             }
         }
+        // Sip Found, try hangup this number
+        //if (hangUpNr != null){
+        //    if (TerminatePhoneCall(hangUpNr) == true)
+        //       return;
+        //}
 
-        // Find Sip Nr of current call
-        String contact = null;
-        if (currentCall != null) {
-            contact = FormatUri(currentCall.getRemoteContact());
-        }
+        // Default hangup behaviour (no uri or terminate uri failed)
+        LinphoneCore lc = LinphoneManager.getLc();
+        LinphoneCall currentCall = lc.getCurrentCall();
 
-        // If HangUpNr added and not Equals current call, do not hang up current call, try terminate from list
-        if (contact != null && hangUpNr != null && !contact.equalsIgnoreCase(hangUpNr))  {
-            LinphoneCall[] calls= lc.getCalls();
-            for (LinphoneCall call : calls) {
-                String uri= FormatUri(call.getRemoteContact());
-                if (uri != null && uri.equalsIgnoreCase(hangUpNr)) {
-                    lc.terminateCall(call);
-                }
-            }
-            return;
-        }
-        // <= Validation on sip HangUp nr
-
-        // Default hangup behaviour
         if (currentCall != null) {
             lc.terminateCall(currentCall);
         } else if (lc.isInConference()) {
@@ -72,5 +59,37 @@ public class HangupReceiver extends BroadcastReceiver {
             }
         }
         return uri;
+    }
+
+    private Boolean TerminatePhoneCall (String hangUpNr){
+
+        LinphoneCore lc = LinphoneManager.getLc();
+        LinphoneCall currentCall = lc.getCurrentCall();
+
+        // Find if HangUp Nr is current call, if so terminate
+        String contact = null;
+        if (currentCall != null) {
+            contact = FormatUri(currentCall.getRemoteContact());
+            if (contact.contains(hangUpNr) == true) {
+                lc.terminateCall(currentCall);
+                //    return true;
+            }
+        }
+
+        // If HangUpNr not Equals current call, try terminate from list
+        if (lc.isInConference())
+            lc.terminateConference();
+
+        LinphoneCall[] calls= lc.getCalls();
+        for (LinphoneCall call : calls) {
+
+            String uri= FormatUri(call.getRemoteContact());
+            if (uri.contains(hangUpNr)) {
+                lc.terminateCall(call);
+                return true;
+            }
+
+        }
+        return false; // uri not found
     }
 }
