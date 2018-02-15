@@ -54,7 +54,8 @@ public class CallOutgoingActivity extends LinphoneGenericActivity implements OnC
 	private LinphoneCall mCall;
 	private LinphoneCoreListenerBase mListener;
 	private boolean isMicMuted, isSpeakerEnabled;
-	private Boolean isHangUp = false; // CLB Quick Fix for calling phone clients with setMaxCalls = 1
+	private boolean isHangUp = false; // CLB Quick Fix for calling phone clients with setMaxCalls = 1
+	private boolean isConnected = false; // CLB Quick Fix for calling phone clients with setMaxCalls = 1
 
 
 	public static CallOutgoingActivity instance() {
@@ -82,6 +83,7 @@ public class CallOutgoingActivity extends LinphoneGenericActivity implements OnC
 
 		isMicMuted = false;
 		isSpeakerEnabled = false;
+		isConnected = false;
 
 		micro = (ImageView) findViewById(R.id.micro);
 		micro.setOnClickListener(this);
@@ -106,6 +108,10 @@ public class CallOutgoingActivity extends LinphoneGenericActivity implements OnC
 					LinphoneActivity.instance().startIncallActivity(mCall);
 					finish();
 					return;
+				} else if (state == State.Connected) {
+					isConnected = true;
+				} else if (state == State.StreamsRunning) {
+					isConnected = true;
 				} else if (state == State.Error) {
 					// Error State : Display Message (TODO Convert LinphoneCore message for internalization)
 					if (call.getErrorInfo().getReason() == Reason.Declined) {
@@ -131,9 +137,9 @@ public class CallOutgoingActivity extends LinphoneGenericActivity implements OnC
 						displayCustomToast(getString(R.string.error_call_declined), Toast.LENGTH_SHORT);
 						decline();
 					}
-					else if  (!isHangUp  && duration < 2 ) {
+					else if  (!isHangUp  && duration < 5 ) {
 						// CLB: Busy, when maxCall is one, no error is send, just callend with duration = 0/1
-						displayCustomToast(getString(R.string.error_user_busy), Toast.LENGTH_SHORT);
+						displayCustomToast(getString(R.string.error_user_busy), Toast.LENGTH_LONG);
 						decline();
 					}
 					isHangUp = false;
