@@ -50,3 +50,5 @@ WORK
 google-services.json
 gradle.properties
 .*clang*
+
+linphone-android-release\.apk
