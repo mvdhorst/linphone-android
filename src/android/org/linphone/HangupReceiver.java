@@ -66,6 +66,7 @@ public class HangupReceiver extends BroadcastReceiver {
 
     private Boolean TerminatePhoneCall (String uriExtra){
 
+        uriExtra = uriExtra.toLowerCase();
         LinphoneCore lc = LinphoneManager.getLc();
         LinphoneCall currentCall = lc.getCurrentCall();
         //String hangUpNr = FormatUri(uriExtra);
