@@ -3,8 +3,11 @@ package org.linphone;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 
+import org.linphone.core.LinphoneAddress;
 import org.linphone.core.LinphoneCall;
 import org.linphone.core.LinphoneCore;
 
@@ -24,18 +27,18 @@ public class HangupReceiver extends BroadcastReceiver {
 
 
         // Find Sip Nr to hang up
-        String hangUpNr = null;
+        String uriExtra = null;
         if (intent != null) {
             Bundle extras = intent.getExtras();
             if (extras != null && extras.containsKey("uri")) {
-                hangUpNr = FormatUri(extras.getString("uri"));
+                uriExtra = extras.getString("uri");
             }
         }
         // Sip Found, try hangup this number
-        //if (hangUpNr != null){
-        //    if (TerminatePhoneCall(hangUpNr) == true)
-        //       return;
-        //}
+        if (uriExtra != null){
+            TerminatePhoneCall(uriExtra);
+            return;
+        }
 
         // Default hangup behaviour (no uri or terminate uri failed)
         LinphoneCore lc = LinphoneManager.getLc();
@@ -61,35 +64,51 @@ public class HangupReceiver extends BroadcastReceiver {
         return uri;
     }
 
-    private Boolean TerminatePhoneCall (String hangUpNr){
+    private Boolean TerminatePhoneCall (String uriExtra){
 
         LinphoneCore lc = LinphoneManager.getLc();
         LinphoneCall currentCall = lc.getCurrentCall();
-
+        //String hangUpNr = FormatUri(uriExtra);
+        //Uri uri = Uri.parse(uriExtra);
+        //String host = uri.getHost();
         // Find if HangUp Nr is current call, if so terminate
-        String contact = null;
         if (currentCall != null) {
-            contact = FormatUri(currentCall.getRemoteContact());
-            if (contact.contains(hangUpNr) == true) {
+            LinphoneAddress remoteAddress = currentCall.getRemoteAddress();
+            String remAddress = null;
+            if(remoteAddress != null) {
+                remAddress = remoteAddress.asString();
+            }
+            Log.i("HangupReceiver", "TerminatePhoneCall: currentCall Remote address: " + remAddress);
+            if (remAddress != null && remAddress.contains(uriExtra) == true) {
                 lc.terminateCall(currentCall);
-                //    return true;
+                LinphoneActivity.instance().resetClassicMenuLayoutAndGoBackToCallIfStillRunning(true);
+                return true;
             }
         }
 
         // If HangUpNr not Equals current call, try terminate from list
-        if (lc.isInConference())
+        if (lc.isInConference()) {
             lc.terminateConference();
+            LinphoneActivity.instance().resetClassicMenuLayoutAndGoBackToCallIfStillRunning(true);
+        }
 
         LinphoneCall[] calls= lc.getCalls();
         for (LinphoneCall call : calls) {
 
-            String uri= FormatUri(call.getRemoteContact());
-            if (uri.contains(hangUpNr)) {
+            LinphoneAddress remoteAddress = call.getRemoteAddress();
+            String remAddress = null;
+            if(remoteAddress != null) {
+                remAddress = remoteAddress.asString();
+            }
+            Log.i("HangupReceiver", "TerminatePhoneCall: other call Remote address: " + remAddress);
+            if (remAddress != null && remAddress.contains(uriExtra) == true) {
                 lc.terminateCall(call);
+                LinphoneActivity.instance().resetClassicMenuLayoutAndGoBackToCallIfStillRunning(true);
                 return true;
             }
 
         }
+        LinphoneActivity.instance().resetClassicMenuLayoutAndGoBackToCallIfStillRunning(true);
         return false; // uri not found
     }
 }

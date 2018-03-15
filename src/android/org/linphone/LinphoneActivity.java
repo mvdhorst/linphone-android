@@ -289,9 +289,6 @@ public class LinphoneActivity extends LinphoneGenericActivity implements OnClick
 			LinphoneManager.getLc().setDeviceRotation(rotation);
 		}
 		mAlwaysChangingPhoneAngle = rotation;
-
-		//CLB
-		LinphoneManager.getLc().setMaxCalls(1);
 	}
 
 	private void initButtons() {
@@ -1076,6 +1073,10 @@ public class LinphoneActivity extends LinphoneGenericActivity implements OnClick
 	}
 
 	public void resetClassicMenuLayoutAndGoBackToCallIfStillRunning() {
+		resetClassicMenuLayoutAndGoBackToCallIfStillRunning(false);
+	}
+
+	public void resetClassicMenuLayoutAndGoBackToCallIfStillRunning(boolean fromHangupReceiver) {
 		DialerFragment dialerFragment = DialerFragment.instance();
 		if (dialerFragment != null) {
 			((DialerFragment) dialerFragment).resetLayout(true);
@@ -1085,7 +1086,10 @@ public class LinphoneActivity extends LinphoneGenericActivity implements OnClick
 			LinphoneCall call = LinphoneManager.getLc().getCalls()[0];
 			if (call.getState() == LinphoneCall.State.IncomingReceived) {
 				startActivity(new Intent(LinphoneActivity.this, CallIncomingActivity.class));
-			} else {
+			} else if(fromHangupReceiver){
+				moveTaskToBack(true);
+			}
+			else {
 				startIncallActivity(call);
 			}
 		}
