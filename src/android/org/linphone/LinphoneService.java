@@ -379,12 +379,13 @@ public final class LinphoneService extends Service {
 						}
 					}
 
-
+					/* CLB exclusive!: Do NOT show 'missed call notification' and icon!! =>
 					Intent missedCallNotifIntent = new Intent(LinphoneService.this, incomingReceivedActivity);
 					missedCallNotifIntent.putExtra("GoToHistory", true);
 					PendingIntent intent = PendingIntent.getActivity(LinphoneService.this, 0, missedCallNotifIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 					Notification notif = Compatibility.createMissedCallNotification(instance, getString(R.string.missed_calls_notif_title), body, intent);
 					notifyWrapper(MISSED_NOTIF_ID, notif);
+					<= End CLB exclusive */
 				}
 
 				if (state == State.StreamsRunning) {
