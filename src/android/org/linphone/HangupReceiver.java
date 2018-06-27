@@ -66,50 +66,74 @@ public class HangupReceiver extends BroadcastReceiver {
 
     private Boolean TerminatePhoneCall (String uriExtra){
 
-        uriExtra = uriExtra.toLowerCase();
-        LinphoneCore lc = LinphoneManager.getLc();
-        LinphoneCall currentCall = lc.getCurrentCall();
-        //String hangUpNr = FormatUri(uriExtra);
-        //Uri uri = Uri.parse(uriExtra);
-        //String host = uri.getHost();
-        // Find if HangUp Nr is current call, if so terminate
-        if (currentCall != null) {
-            LinphoneAddress remoteAddress = currentCall.getRemoteAddress();
-            String remAddress = null;
-            if(remoteAddress != null) {
-                remAddress = remoteAddress.asString();
+        try{
+            uriExtra = uriExtra.toLowerCase();
+            LinphoneCore lc = LinphoneManager.getLc();
+            LinphoneCall currentCall = lc.getCurrentCall();
+            //String hangUpNr = FormatUri(uriExtra);
+            //Uri uri = Uri.parse(uriExtra);
+            //String host = uri.getHost();
+            // Find if HangUp Nr is current call, if so terminate
+            if (currentCall != null) {
+                LinphoneAddress remoteAddress = currentCall.getRemoteAddress();
+                String remAddress = null;
+                if(remoteAddress != null) {
+                    remAddress = remoteAddress.asString();
+                }
+                Log.i("HangupReceiver", "TerminatePhoneCall: currentCall Remote address: " + remAddress);
+                if (remAddress != null && remAddress.contains(uriExtra) == true) {
+                    lc.terminateCall(currentCall);
+                    TryTerminateActiveCall(true);
+                    return true;
+                }
             }
-            Log.i("HangupReceiver", "TerminatePhoneCall: currentCall Remote address: " + remAddress);
-            if (remAddress != null && remAddress.contains(uriExtra) == true) {
-                lc.terminateCall(currentCall);
-                LinphoneActivity.instance().resetClassicMenuLayoutAndGoBackToCallIfStillRunning(true);
-                return true;
+
+            // If HangUpNr not Equals current call, try terminate from list
+            if (lc.isInConference()) {
+                lc.terminateConference();
+                TryTerminateActiveCall(true);
             }
+
+            LinphoneCall[] calls= lc.getCalls();
+            for (LinphoneCall call : calls) {
+
+                LinphoneAddress remoteAddress = call.getRemoteAddress();
+                String remAddress = null;
+                if(remoteAddress != null) {
+                    remAddress = remoteAddress.asString();
+                }
+                Log.i("HangupReceiver", "TerminatePhoneCall: other call Remote address: " + remAddress);
+                if (remAddress != null && remAddress.contains(uriExtra) == true) {
+                    lc.terminateCall(call);
+                    TryTerminateActiveCall(true);
+                    return true;
+                }
+            }
+            TryTerminateActiveCall(true);
         }
-
-        // If HangUpNr not Equals current call, try terminate from list
-        if (lc.isInConference()) {
-            lc.terminateConference();
-            LinphoneActivity.instance().resetClassicMenuLayoutAndGoBackToCallIfStillRunning(true);
+        catch  (Exception e) {
+            Log.e("HangupReceiver", "Exception TerminatePhoneCall: " + e.getMessage());
         }
-
-        LinphoneCall[] calls= lc.getCalls();
-        for (LinphoneCall call : calls) {
-
-            LinphoneAddress remoteAddress = call.getRemoteAddress();
-            String remAddress = null;
-            if(remoteAddress != null) {
-                remAddress = remoteAddress.asString();
-            }
-            Log.i("HangupReceiver", "TerminatePhoneCall: other call Remote address: " + remAddress);
-            if (remAddress != null && remAddress.contains(uriExtra) == true) {
-                lc.terminateCall(call);
-                LinphoneActivity.instance().resetClassicMenuLayoutAndGoBackToCallIfStillRunning(true);
-                return true;
-            }
-
-        }
-        LinphoneActivity.instance().resetClassicMenuLayoutAndGoBackToCallIfStillRunning(true);
         return false; // uri not found
+    }
+
+    private Boolean TryTerminateActiveCall (Boolean fromHangupReceiver){
+
+        try{
+            if (!LinphoneActivity.isInstanciated())
+                return false;
+
+            LinphoneActivity main = LinphoneActivity.instance();
+            if (main == null)
+                return false;
+
+            main.resetClassicMenuLayoutAndGoBackToCallIfStillRunning(fromHangupReceiver);
+            return true;
+
+        }
+        catch(Exception e){
+            Log.e("HangupReceiver", "Exception TryTerminateActiveCall: " + e.getMessage());
+        }
+        return false;
     }
 }
