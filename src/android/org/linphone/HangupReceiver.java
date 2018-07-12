@@ -15,6 +15,7 @@ import org.linphone.core.LinphoneCore;
  * Created by mvdhorst on 18-12-17.
  * Hangs up a call.
  *
+ * 12-07-18 rvdillen Fix HangUp for listen only mode
  * 01-02-18 rvdillen Add hangUp uri to hangup selected call
  * 18-12-17 mvdhorst Initial version
  */
@@ -54,25 +55,18 @@ public class HangupReceiver extends BroadcastReceiver {
     }
 
     private String FormatUri (String uri){
-
-        if (uri != null) {
-            int index = uri.indexOf("@");
-            if (index > -1){
-                uri = uri.substring(0, index);
-            }
-        }
+        uri = uri.toLowerCase();
+        uri = uri.replace("%21speak", "!speak"); // Listen only connection (BG-6400)
         return uri;
     }
 
     private Boolean TerminatePhoneCall (String uriExtra){
 
         try{
-            uriExtra = uriExtra.toLowerCase();
+            uriExtra = FormatUri(uriExtra);
             LinphoneCore lc = LinphoneManager.getLc();
             LinphoneCall currentCall = lc.getCurrentCall();
-            //String hangUpNr = FormatUri(uriExtra);
-            //Uri uri = Uri.parse(uriExtra);
-            //String host = uri.getHost();
+
             // Find if HangUp Nr is current call, if so terminate
             if (currentCall != null) {
                 LinphoneAddress remoteAddress = currentCall.getRemoteAddress();
