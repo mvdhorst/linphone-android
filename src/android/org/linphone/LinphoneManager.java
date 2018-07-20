@@ -852,7 +852,9 @@ public class LinphoneManager implements LinphoneCoreListener, LinphoneChatMessag
 
 		mLc.setRingback(mRingbackSoundFile);
 		mLc.setRootCA(mLinphoneRootCaFile);
+		/* CLB Exclusive, do not use Pause SoundFile (BG-4537) =>
 		mLc.setPlayFile(mPauseSoundFile);
+		<= end CLB */
 		mLc.setChatDatabasePath(mChatDatabaseFile);
 		mLc.setCallLogsDatabasePath(mCallLogDatabaseFile);
 		mLc.setFriendsDatabasePath(mFriendsDatabaseFile);
