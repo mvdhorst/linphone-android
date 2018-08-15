@@ -24,6 +24,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.telephony.TelephonyManager;
 
+import org.linphone.core.LinphoneCall;
+
 /**
  * Pause current SIP calls when GSM phone rings or is active.
  */
@@ -40,6 +42,11 @@ public class PhoneStateChangedReceiver extends BroadcastReceiver {
 			LinphoneManager.getLc().pauseAllCalls();
         } else if (TelephonyManager.EXTRA_STATE_IDLE.equals(extraState)) {
 			LinphoneManager.getInstance().setCallGsmON(false);
+			LinphoneCall[] calls = LinphoneManager.getLc().getCalls();
+			if(calls != null && calls.length > 0)
+			{
+				LinphoneManager.getLc().resumeCall(calls[0]);
+			}
         }
 	}
 }
