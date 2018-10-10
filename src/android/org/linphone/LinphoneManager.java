@@ -1515,6 +1515,18 @@ public class LinphoneManager implements LinphoneCoreListener, LinphoneChatMessag
 				}
                 newCallState = "idle";
 			}
+			else
+			{
+				//CLB: Still first call in pause mode => Activate .
+				LinphoneCall[] calls = mLc.getCalls();
+				if(calls != null && calls.length > 0) {
+					LinphoneCall call1 = calls[0];
+					if (call1.getState() == State.Paused) {
+						mLc.resumeCall(call1);
+						newCallState = "connected";
+					}
+				}
+			}
 		}
 		if (state == State.CallUpdatedByRemote) {
 			// If the correspondent proposes video while audio call

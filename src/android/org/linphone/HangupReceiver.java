@@ -15,6 +15,7 @@ import org.linphone.core.LinphoneCore;
  * Created by mvdhorst on 18-12-17.
  * Hangs up a call.
  *
+ * 10-10-18 rvdillen Activate next 'in pause call' after hangup
  * 12-07-18 rvdillen Fix HangUp for listen only mode
  * 01-02-18 rvdillen Add hangUp uri to hangup selected call
  * 18-12-17 mvdhorst Initial version
@@ -65,9 +66,10 @@ public class HangupReceiver extends BroadcastReceiver {
         try{
             uriExtra = FormatUri(uriExtra);
             LinphoneCore lc = LinphoneManager.getLc();
-            LinphoneCall currentCall = lc.getCurrentCall();
+
 
             // Find if HangUp Nr is current call, if so terminate
+            LinphoneCall currentCall = lc.getCurrentCall();
             if (currentCall != null) {
                 LinphoneAddress remoteAddress = currentCall.getRemoteAddress();
                 String remAddress = null;
@@ -76,8 +78,22 @@ public class HangupReceiver extends BroadcastReceiver {
                 }
                 Log.i("HangupReceiver", "TerminatePhoneCall: currentCall Remote address: " + remAddress);
                 if (remAddress != null && remAddress.contains(uriExtra) == true) {
+
+                    // Current call is from hangup uri.
+
+                    // Check if any (other) calls in pause state
+                    boolean anyCallInPause = false;
+                    LinphoneCall[] calls = lc.getCalls();
+                    if(calls != null && calls.length > 0) {
+                        for (LinphoneCall call: calls) {
+                            anyCallInPause = anyCallInPause || call.getState() == LinphoneCall.State.Paused;
+                        }
+                    }
+
+                    // => terminateCall now && if no calls in pause resetClassicMenuLayoutAndGoBackToCallIfStillRunning
                     lc.terminateCall(currentCall);
-                    TryTerminateActiveCall(true);
+                    if (anyCallInPause == false)
+                        TryTerminateActiveCall(true);
                     return true;
                 }
             }
