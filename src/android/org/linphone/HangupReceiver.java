@@ -15,6 +15,7 @@ import org.linphone.core.LinphoneCore;
  * Created by mvdhorst on 18-12-17.
  * Hangs up a call.
  *
+ * 16-10-18 rvdillen tweaked hangup current call (BG-7267)
  * 10-10-18 rvdillen Activate next 'in pause call' after hangup
  * 12-07-18 rvdillen Fix HangUp for listen only mode
  * 01-02-18 rvdillen Add hangUp uri to hangup selected call
@@ -57,7 +58,8 @@ public class HangupReceiver extends BroadcastReceiver {
 
     private String FormatUri (String uri){
         uri = uri.toLowerCase();
-        uri = uri.replace("%21speak", "!speak"); // Listen only connection (BG-6400)
+        uri = uri.replace("%20speak", " speak"); // Listen only connection (BG-6400)
+        uri = uri.replace("%21speak", "!speak"); // old way as back up)
         return uri;
     }
 
@@ -67,33 +69,43 @@ public class HangupReceiver extends BroadcastReceiver {
             uriExtra = FormatUri(uriExtra);
             LinphoneCore lc = LinphoneManager.getLc();
 
-
             // Find if HangUp Nr is current call, if so terminate
             LinphoneCall currentCall = lc.getCurrentCall();
             if (currentCall != null) {
+                // Current call found
                 LinphoneAddress remoteAddress = currentCall.getRemoteAddress();
                 String remAddress = null;
                 if(remoteAddress != null) {
                     remAddress = remoteAddress.asString();
                 }
-                Log.i("HangupReceiver", "TerminatePhoneCall: currentCall Remote address: " + remAddress);
+                Log.i("HangupReceiver", "TerminatePhoneCall started: Remote address: " + remAddress);
+
+                // Check if any (other) calls in pause state
+                boolean anyCallInPause = false;
+                LinphoneCall[] calls = lc.getCalls();
+                if(calls != null && calls.length > 0) {
+                    for (LinphoneCall call: calls) {
+                        anyCallInPause = anyCallInPause || call.getState() == LinphoneCall.State.Paused;
+                    }
+                }
+
+                // Check if Current call has same uri as from hangup uri
                 if (remAddress != null && remAddress.contains(uriExtra) == true) {
 
-                    // Current call is from hangup uri.
-
-                    // Check if any (other) calls in pause state
-                    boolean anyCallInPause = false;
-                    LinphoneCall[] calls = lc.getCalls();
-                    if(calls != null && calls.length > 0) {
-                        for (LinphoneCall call: calls) {
-                            anyCallInPause = anyCallInPause || call.getState() == LinphoneCall.State.Paused;
-                        }
-                    }
-
-                    // => terminateCall now && if no calls in pause resetClassicMenuLayoutAndGoBackToCallIfStillRunning
+                    // Current call is from hangup uri. => terminateCall now && if no calls in pause resetClassicMenuLayoutAndGoBackToCallIfStillRunning
+                    Log.i("HangupReceiver", "TerminatePhoneCall: terminate currentCall Remote address: " + remAddress);
                     lc.terminateCall(currentCall);
                     if (anyCallInPause == false)
                         TryTerminateActiveCall(true);
+                    return true;
+                }
+                else if (anyCallInPause == true) {
+                    Log.i("HangupReceiver", "TerminatePhoneCall: terminate currentCall, cause calls in pause");
+                    lc.terminateCall(currentCall);
+                    return true;
+                }
+                else {
+                    Log.i("HangupReceiver", "TerminatePhoneCall: terminate currentCall ignored, cause already gone");
                     return true;
                 }
             }
