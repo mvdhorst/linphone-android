@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
+import android.util.Log;
 
 import org.linphone.compatibility.Compatibility;
 import org.linphone.mediastream.Version;
@@ -16,6 +17,7 @@ import static android.content.Intent.ACTION_MAIN;
  */
 
 public class DirectCallReceiver extends BroadcastReceiver {
+    private final static String TAG = "DirectCallReceiver";
     private String addressToCall;
 
     private Handler mHandler;
@@ -25,6 +27,7 @@ public class DirectCallReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         if(isOrderedBroadcast())
             abortBroadcast();
+        Log.i(TAG, "onReceive DirectCallReceiver ");
 /*
 LinphoneCore lc = LinphoneManager.getLc();
 LinphoneCall currentCall = lc.getCurrentCall();
@@ -42,6 +45,7 @@ LinphoneCall currentCall = lc.getCurrentCall();
         if (LinphoneService.isReady()) {
             onServiceReady();
         } else {
+            Log.i(TAG, "Start linphone as background");
             // start linphone as background
             Compatibility.startService(context, new Intent(ACTION_MAIN).setClass(context, LinphoneService.class));
             mServiceThread = new ServiceWaitThread();
@@ -53,12 +57,14 @@ LinphoneCall currentCall = lc.getCurrentCall();
     protected void onServiceReady() {
         // We need LinphoneService to start bluetoothManager
         if (Version.sdkAboveOrEqual(Version.API11_HONEYCOMB_30)) {
+            Log.i(TAG, "We need LinphoneService to start bluetoothManager");
             BluetoothManager.getInstance().initBluetooth();
         }
 
         mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
+                Log.i(TAG, "Start call to " + addressToCall);
                 LinphoneManager.getInstance().newOutgoingCall(addressToCall, null);
             }
         }, 100);
