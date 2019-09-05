@@ -171,6 +171,7 @@ public final class LinphoneService extends Service {
 
 		@Override
 		public synchronized void onActivityResumed(Activity activity) {
+
 			Log.i("Activity resumed:" + activity);
 			if (activities.contains(activity)) {
 				mRunningActivities++;
@@ -295,12 +296,16 @@ public final class LinphoneService extends Service {
 		// In case restart after a crash. Main in LinphoneActivity
 		mNotificationTitle = getString(R.string.service_name);
 
+		// CLB => Inspect Local Configuration files (linphonerc)
+		LinphonePreferencesCLB.instance().CheckOnLocalIniFile(getBaseContext());
+
 		// Needed in order for the two next calls to succeed, libraries must have been loaded first
 		LinphonePreferences.instance().setContext(getBaseContext());
 		LinphoneCoreFactory.instance().setLogCollectionPath(getFilesDir().getAbsolutePath());
 		boolean isDebugEnabled = LinphonePreferences.instance().isDebugEnabled();
 		LinphoneCoreFactory.instance().enableLogCollection(isDebugEnabled);
 		LinphoneCoreFactory.instance().setDebugMode(isDebugEnabled, getString(R.string.app_name));
+
 
 		// Dump some debugging information to the logs
 		Log.i(START_LINPHONE_LOGS);
@@ -329,6 +334,10 @@ public final class LinphoneService extends Service {
 		mNotif = Compatibility.createNotification(this, mNotificationTitle, "", R.drawable.linphone_notification_icon, R.mipmap.ic_launcher, bm, mNotifContentIntent, true,notifcationsPriority);
 
 		LinphoneManager.createAndStart(LinphoneService.this);
+
+		// CLB => Inspect Local Xml Configuration files (linphonerc.xml)
+		LinphonePreferencesCLB.instance().CheckOnLocalXmlFile();
+		LinphonePreferencesCLB.instance().LogSettingChanges();
 
 		instance = this; // instance is ready once linphone manager has been created
 		incomingReceivedActivityName = LinphonePreferences.instance().getActivityToLaunchOnIncomingReceived();
@@ -426,7 +435,6 @@ public final class LinphoneService extends Service {
 				}
 			}
 		});
-
 
 		try {
 			mStartForeground = getClass().getMethod("startForeground", mStartFgSign);
