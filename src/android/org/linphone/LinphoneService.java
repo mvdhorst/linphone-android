@@ -56,6 +56,7 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.SystemClock;
@@ -301,7 +302,12 @@ public final class LinphoneService extends Service {
 
 		// Needed in order for the two next calls to succeed, libraries must have been loaded first
 		LinphonePreferences.instance().setContext(getBaseContext());
-		LinphoneCoreFactory.instance().setLogCollectionPath(getFilesDir().getAbsolutePath());
+
+		String external = getExternalFilesDir(Environment.getDataDirectory().getAbsolutePath()).getAbsolutePath(); // GET public dir
+		if(external != null)
+			LinphoneCoreFactory.instance().setLogCollectionPath(external); // GET public dir
+		else
+			LinphoneCoreFactory.instance().setLogCollectionPath(getFilesDir().getAbsolutePath());
 		boolean isDebugEnabled = LinphonePreferences.instance().isDebugEnabled();
 		LinphoneCoreFactory.instance().enableLogCollection(isDebugEnabled);
 		LinphoneCoreFactory.instance().setDebugMode(isDebugEnabled, getString(R.string.app_name));

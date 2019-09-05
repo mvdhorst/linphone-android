@@ -902,8 +902,10 @@ public class LinphoneManager implements LinphoneCoreListener, LinphoneChatMessag
         mDirectCallIntentFilter.setPriority(99999999);
         mDirectCallReceiver = new DirectCallReceiver();
         try {
+        	Log.i("Register Direct call receiver");
             mServiceContext.registerReceiver(mDirectCallReceiver, mDirectCallIntentFilter);
-        }catch(IllegalArgumentException e){e.printStackTrace();}
+        }catch(IllegalArgumentException e){
+			Log.i("Register Direct call receiver fail " + e.getMessage());e.printStackTrace();}
 
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 			mDozeIntentFilter = new IntentFilter();
