@@ -54,6 +54,8 @@ public class LinphoneLauncherActivity extends Activity {
 		}
 		setContentView(R.layout.launch_screen);
 
+		LinphonePreferencesCLB.instance().CheckPermissions(this);
+
 		mHandler = new Handler();
 
 		Intent intent = getIntent();

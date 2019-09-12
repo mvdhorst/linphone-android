@@ -1,11 +1,14 @@
 package org.linphone;
 
+import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
+import android.content.pm.PackageManager;
+
 import android.os.Build;
 import android.os.Environment;
+import android.support.v4.content.ContextCompat;
 
-import org.linphone.core.LinphoneCore;
-import org.linphone.core.LinphoneCoreFactory;
 import org.linphone.core.LpConfig;
 import org.linphone.mediastream.Log;
 import org.xmlpull.v1.XmlPullParser;
@@ -18,11 +21,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.linphone.mediastream.Log.e;
 
 /**
  *
@@ -53,7 +53,25 @@ public class LinphonePreferencesCLB {
     private LinphonePreferencesCLB() {
     }
 
+    public void CheckPermissions(Activity context) {
+
+        List<String> permissions = new ArrayList<String>();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
+            // WRITE_EXTERNAL_STORAGE
+            if (android.support.v4.content.ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
+                permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            }
+        }
+
+        if (permissions.size() > 0)
+            android.support.v4.app.ActivityCompat.requestPermissions(context, permissions.toArray(new String[0]), 0);
+    }
+
+
     public void CheckOnLocalIniFile(Context context) {
+
 
         // BasePath => Where Linphone is
         basePath = context.getFilesDir().getAbsolutePath();
