@@ -3,7 +3,7 @@
           xmlns:android="http://schemas.android.com/apk/res/android"
           android:installLocation="auto"
           android:versionCode="3329"
-          android:versionName="3.3.2.20190912clb">
+          android:versionName="3.3.2.20191015clb">
 
     <uses-sdk
         android:minSdkVersion="16"

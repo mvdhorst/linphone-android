@@ -43,7 +43,7 @@
 	url = git://git.linphone.org/bcg729.git
 [submodule "submodules/belle-sip"]
 	path = submodules/belle-sip
-	url = git://git.linphone.org/belle-sip.git
+	url = https://github.com/mvdhorst/belle-sip.git
 [submodule "submodules/externals/antlr3"]
 	path = submodules/externals/antlr3
 	url = git://git.linphone.org/antlr3.git
